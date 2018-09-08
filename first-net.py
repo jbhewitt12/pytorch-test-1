@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import torch.optim as optim
 
 
 class Net(nn.Module):
@@ -47,9 +48,46 @@ print(len(params))
 print(params[0].size())  # conv1's .weight
 
 
-input = Variable(torch.randn(1, 1, 32, 32)) #I added the Variable() function to get rid of an error 
+input = torch.randn(1, 1, 32, 32) #I added the Variable() function to get rid of an error 
 out = net(input)
 print(out)
 
-net.zero_grad()
-out.backward(torch.randn(1, 10))
+net.zero_grad() #Zero the gradient buffers of all parameters
+out.backward(torch.randn(1, 10)) # set backprops with random gradients
+
+
+# A loss function takes the (output, target) pair of inputs, and computes a value that estimates how far away the output is from the target.
+output = net(input)
+target = torch.randn(10)  # a dummy target, for example
+target = target.view(1, -1)  # make it the same shape as output
+print('out, target:')
+print(output)
+print(target)
+criterion = nn.MSELoss() #using Mean Squared Error loss function
+
+loss = criterion(output, target)
+print('loss:')
+print(loss)
+
+net.zero_grad()     # zeroes the gradient buffers of all parameters
+
+print('conv1.bias.grad before backward')
+print(net.conv1.bias.grad)
+
+loss.backward()
+
+print('conv1.bias.grad after backward')
+print(net.conv1.bias.grad)
+
+# Now implement Stochastic Gradient Descent (SGD):
+# weight = weight - learning_rate * gradient
+
+# create your optimizer
+optimizer = optim.SGD(net.parameters(), lr=0.01)
+
+# in your training loop:
+optimizer.zero_grad()   # zero the gradient buffers
+output = net(input)
+loss = criterion(output, target)
+loss.backward()
+optimizer.step()    # Does the update
